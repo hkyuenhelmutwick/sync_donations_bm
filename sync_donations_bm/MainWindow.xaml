@@ -7,8 +7,25 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <TextBox x:Name="FilePathTextBox" HorizontalAlignment="Left" VerticalAlignment="Top" Width="500" Height="30" Margin="10"/>
-        <Button Content="Browse" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Height="30" Margin="520,10,0,0" Click="BrowseButton_Click"/>
-        <Button Content="Synchronize" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Height="30" Margin="630,10,0,0" Click="SynchronizeButton_Click"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBox x:Name="FilePathTextBox" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="30" Margin="10"/>
+        <Button Content="Browse" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Height="30" Margin="10,10,0,0" Click="BrowseButton_Click"/>
+        <Button Content="Synchronize" Grid.Row="0" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Height="30" Margin="10,10,0,0" Click="SynchronizeButton_Click"/>
+
+        <DataGrid x:Name="EventsDataGrid" Grid.Row="1" Grid.ColumnSpan="3" AutoGenerateColumns="False" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="10">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Event Name" Binding="{Binding Name}" IsReadOnly="True" Width="*"/>
+                <DataGridTextColumn Header="Event File Path" Binding="{Binding EventFile}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
     </Grid>
 </Window>

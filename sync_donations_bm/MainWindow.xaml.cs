@@ -5,14 +5,19 @@ using System.Windows;
 using Microsoft.Win32;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using System.Collections.ObjectModel;
 
 namespace sync_donations_bm
 {
     public partial class MainWindow : Window
     {
+        public ObservableCollection<Event> Events { get; set; }
+
         public MainWindow()
         {
             InitializeComponent();
+            Events = new ObservableCollection<Event>();
+            EventsDataGrid.ItemsSource = Events;
         }
 
         private void BrowseButton_Click(object sender, RoutedEventArgs e)
@@ -50,7 +55,7 @@ namespace sync_donations_bm
                         return;
                     }
 
-                    var events = new List<Event>();
+                    Events.Clear();
                     IRow row = sheet.GetRow(2); // F3 is the third row (index 2)
                     if (row != null)
                     {
@@ -62,14 +67,14 @@ namespace sync_donations_bm
                                 string eventName = cell.ToString().Replace("\r\n", string.Empty).Replace("\n", string.Empty);
                                 if (!string.IsNullOrEmpty(eventName))
                                 {
-                                    events.Add(new Event { Name = eventName, EventFile = filePath });
+                                    Events.Add(new Event { Name = eventName });
                                 }
                             }
                         }
                     }
 
                     // Process the events as needed
-                    MessageBox.Show($"Found {events.Count} events.");
+                    MessageBox.Show($"Found {Events.Count} events.");
                 }
             }
         }
