@@ -50,6 +50,10 @@ namespace sync_donations_bm
                     {
                         eventItem.EventFile = openFileDialog.FileName;
                     }
+                    else
+                    {
+                        Events.Add(new Event { EventFile = openFileDialog.FileName });
+                    }
                 }
             }
         }
@@ -65,11 +69,6 @@ namespace sync_donations_bm
                     Events.Remove(eventItem);
                 }
             }
-        }
-
-        private void AddEventFileButton_Click(object sender, RoutedEventArgs e)
-        {
-            Events.Add(new Event());
         }
 
         private void SynchronizeButton_Click(object sender, RoutedEventArgs e)
