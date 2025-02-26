@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using Microsoft.Win32;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
-using System.Collections.ObjectModel;
 
 namespace sync_donations_bm
 {
@@ -75,6 +76,28 @@ namespace sync_donations_bm
 
                     // Process the events as needed
                     MessageBox.Show($"Found {Events.Count} events.");
+                }
+            }
+        }
+
+        private void BrowseEventFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "Excel Files|*.xlsx;*.xls",
+                Title = "Select an Event Excel File"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                var button = sender as Button;
+                if (button != null)
+                {
+                    var eventItem = button.DataContext as Event;
+                    if (eventItem != null)
+                    {
+                        eventItem.EventFile = openFileDialog.FileName;
+                    }
                 }
             }
         }

@@ -24,7 +24,16 @@
         <DataGrid x:Name="EventsDataGrid" Grid.Row="1" Grid.ColumnSpan="3" AutoGenerateColumns="False" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="10">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Event Name" Binding="{Binding Name}" IsReadOnly="True" Width="*"/>
-                <DataGridTextColumn Header="Event File Path" Binding="{Binding EventFile}" Width="*"/>
+                <DataGridTemplateColumn Header="Event File Path" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox Text="{Binding EventFile, UpdateSourceTrigger=PropertyChanged}" Width="300"/>
+                                <Button Content="Browse" Width="75" Margin="5,0,0,0" Click="BrowseEventFileButton_Click"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
     </Grid>
