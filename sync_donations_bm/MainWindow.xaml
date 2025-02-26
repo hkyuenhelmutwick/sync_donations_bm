@@ -7,6 +7,6 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-
+        <Button Content="Synchronize" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Height="30" Click="SynchronizeButton_Click"/>
     </Grid>
 </Window>
