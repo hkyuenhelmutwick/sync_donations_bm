@@ -115,22 +115,32 @@ namespace sync_donations_bm
         {
             foreach (var eventItem in Events)
             {
-                if (string.IsNullOrWhiteSpace(eventItem.EventFile) || !File.Exists(eventItem.EventFile))
+                if (!IsEventFileNameValid(eventItem))
                 {
-                    MessageBox.Show($"Event file for '{eventItem.Name}' is missing or does not exist.");
-                    return;
-                }
-
-                string eventFileName = Path.GetFileNameWithoutExtension(eventItem.EventFile);
-                if (!eventFileName.Contains(eventItem.Name))
-                {
-                    MessageBox.Show($"Event file name '{eventFileName}' does not contain the event name '{eventItem.Name}'.");
                     return;
                 }
             }
 
             // Further processing if needed
             MessageBox.Show("All event files are valid.");
+        }
+
+        private bool IsEventFileNameValid(Event eventItem)
+        {
+            if (string.IsNullOrWhiteSpace(eventItem.EventFile) || !File.Exists(eventItem.EventFile))
+            {
+                MessageBox.Show($"Event file for '{eventItem.Name}' is missing or does not exist.");
+                return false;
+            }
+
+            string eventFileName = Path.GetFileNameWithoutExtension(eventItem.EventFile);
+            if (!eventFileName.Contains(eventItem.Name))
+            {
+                MessageBox.Show($"Event file name '{eventFileName}' does not contain the event name '{eventItem.Name}'.");
+                return false;
+            }
+
+            return true;
         }
     }
 
