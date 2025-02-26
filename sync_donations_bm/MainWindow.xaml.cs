@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
@@ -97,6 +96,16 @@ namespace sync_donations_bm
                     if (eventItem != null)
                     {
                         eventItem.EventFile = openFileDialog.FileName;
+                        // Update the TextBox in the DataGrid
+                        var parent = button.Parent as StackPanel;
+                        if (parent != null)
+                        {
+                            var textBox = parent.Children[0] as TextBox;
+                            if (textBox != null)
+                            {
+                                textBox.Text = openFileDialog.FileName;
+                            }
+                        }
                     }
                 }
             }
@@ -104,7 +113,24 @@ namespace sync_donations_bm
 
         private void SynchronizeButton_Click(object sender, RoutedEventArgs e)
         {
-            // This method can be used for further processing if needed
+            foreach (var eventItem in Events)
+            {
+                if (string.IsNullOrWhiteSpace(eventItem.EventFile) || !File.Exists(eventItem.EventFile))
+                {
+                    MessageBox.Show($"Event file for '{eventItem.Name}' is missing or does not exist.");
+                    return;
+                }
+
+                string eventFileName = Path.GetFileNameWithoutExtension(eventItem.EventFile);
+                if (!eventFileName.Contains(eventItem.Name))
+                {
+                    MessageBox.Show($"Event file name '{eventFileName}' does not contain the event name '{eventItem.Name}'.");
+                    return;
+                }
+            }
+
+            // Further processing if needed
+            MessageBox.Show("All event files are valid.");
         }
     }
 
