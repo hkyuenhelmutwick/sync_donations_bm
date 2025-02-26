@@ -8,8 +8,8 @@
         Title="MainWindow" Height="450" Width="800">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -17,13 +17,8 @@
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
 
-        <TextBox x:Name="FilePathTextBox" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="30" Margin="10"/>
-        <Button Content="Browse" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Height="30" Margin="10,10,0,0" Click="BrowseButton_Click"/>
-        <Button Content="Synchronize" Grid.Row="0" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Height="30" Margin="10,10,0,0" Click="SynchronizeButton_Click"/>
-
-        <DataGrid x:Name="EventsDataGrid" Grid.Row="1" Grid.ColumnSpan="3" AutoGenerateColumns="False" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="10">
+        <DataGrid x:Name="EventsDataGrid" Grid.Row="0" Grid.ColumnSpan="3" AutoGenerateColumns="False" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="10">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Event Name" Binding="{Binding Name}" IsReadOnly="True" Width="*"/>
                 <DataGridTemplateColumn Header="Event File Path" Width="*">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
@@ -36,5 +31,10 @@
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
+
+        <TextBox x:Name="FilePathTextBox" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="30" Margin="10"/>
+        <Button Content="Browse" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Height="30" Margin="10,10,0,0" Click="BrowseButton_Click"/>
+        <Button Content="Synchronize" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Height="30" Margin="10,10,0,0" Click="SynchronizeButton_Click"/>
     </Grid>
 </Window>
+
