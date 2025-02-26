@@ -49,19 +49,27 @@ namespace sync_donations_bm
                     if (eventItem != null)
                     {
                         eventItem.EventFile = openFileDialog.FileName;
-                        // Update the TextBox in the DataGrid
-                        var parent = button.Parent as StackPanel;
-                        if (parent != null)
-                        {
-                            var textBox = parent.Children[0] as TextBox;
-                            if (textBox != null)
-                            {
-                                textBox.Text = openFileDialog.FileName;
-                            }
-                        }
                     }
                 }
             }
+        }
+
+        private void RemoveEventFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null)
+            {
+                var eventItem = button.DataContext as Event;
+                if (eventItem != null)
+                {
+                    Events.Remove(eventItem);
+                }
+            }
+        }
+
+        private void AddEventFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            Events.Add(new Event());
         }
 
         private void SynchronizeButton_Click(object sender, RoutedEventArgs e)
@@ -73,7 +81,6 @@ namespace sync_donations_bm
 
     public class Event
     {
-        public string Name { get; set; }
         public string EventFile { get; set; }
     }
 }
