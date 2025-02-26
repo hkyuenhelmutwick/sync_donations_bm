@@ -7,6 +7,8 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <Button Content="Synchronize" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Height="30" Click="SynchronizeButton_Click"/>
+        <TextBox x:Name="FilePathTextBox" HorizontalAlignment="Left" VerticalAlignment="Top" Width="500" Height="30" Margin="10"/>
+        <Button Content="Browse" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Height="30" Margin="520,10,0,0" Click="BrowseButton_Click"/>
+        <Button Content="Synchronize" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Height="30" Margin="630,10,0,0" Click="SynchronizeButton_Click"/>
     </Grid>
 </Window>
