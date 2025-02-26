@@ -22,10 +22,14 @@
                 <DataGridTemplateColumn Header="Event File Path" Width="*">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBox Text="{Binding EventFile, UpdateSourceTrigger=PropertyChanged}" Width="300"/>
-                                <Button Content="Browse" Width="75" Margin="5,0,0,0" Click="BrowseEventFileButton_Click"/>
-                            </StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding EventFile, UpdateSourceTrigger=PropertyChanged}" Grid.Column="0" Margin="0,0,5,0"/>
+                                <Button Content="Browse" Grid.Column="1" Width="75" Click="BrowseEventFileButton_Click"/>
+                            </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -37,4 +41,3 @@
         <Button Content="Synchronize" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Top" Width="100" Height="30" Margin="10,10,0,0" Click="SynchronizeButton_Click"/>
     </Grid>
 </Window>
-
