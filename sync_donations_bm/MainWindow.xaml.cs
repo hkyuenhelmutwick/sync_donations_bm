@@ -209,6 +209,13 @@ namespace sync_donations_bm
                 ICell newCell = row.CreateCell(colIndex);
                 newCell.SetCellValue(eventFileNamePrefix);
                 existingEventNames[eventFileNamePrefix] = colIndex;
+
+                // Create 20 cells under the new event name cell
+                for (int rowIndex = 3; rowIndex <= 22; rowIndex++) // 20 cells below row 3 is row 4 to row 23 (index 3 to 22)
+                {
+                    IRow donationRow = sheet.GetRow(rowIndex) ?? sheet.CreateRow(rowIndex);
+                    donationRow.CreateCell(colIndex);
+                }
             }
 
             // Process event donation amount cells
