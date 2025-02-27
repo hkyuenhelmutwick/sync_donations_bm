@@ -17,6 +17,7 @@ namespace sync_donations_bm
         private static readonly string JsonFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "events.json");
         private static readonly string ProjectJsonFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "events.json");
         public ObservableCollection<Event> Events { get; set; }
+        public Overview Overview { get; set; }
 
         public MainWindow()
         {
@@ -31,10 +32,11 @@ namespace sync_donations_bm
             if (File.Exists(JsonFilePath))
             {
                 var json = File.ReadAllText(JsonFilePath);
-                var events = JsonSerializer.Deserialize<List<Event>>(json);
-                if (events != null)
+                var data = JsonSerializer.Deserialize<OverviewData>(json);
+                if (data != null)
                 {
-                    foreach (var eventItem in events)
+                    Overview = data.Overview;
+                    foreach (var eventItem in data.Events)
                     {
                         Events.Add(eventItem);
                     }
@@ -44,8 +46,12 @@ namespace sync_donations_bm
 
         private void SaveEventsToJson()
         {
-            var events = new List<Event>(Events);
-            var json = JsonSerializer.Serialize(events);
+            var data = new OverviewData
+            {
+                Overview = Overview,
+                Events = new List<Event>(Events)
+            };
+            var json = JsonSerializer.Serialize(data);
             File.WriteAllText(JsonFilePath, json);
             File.WriteAllText(ProjectJsonFilePath, json); // Update the project directory as well
         }
@@ -61,6 +67,10 @@ namespace sync_donations_bm
             if (openFileDialog.ShowDialog() == true)
             {
                 FilePathTextBox.Text = openFileDialog.FileName;
+
+                // Save the overview file path to events.json
+                Overview = new Overview { OverviewFilePath = openFileDialog.FileName };
+                SaveEventsToJson();
             }
         }
 
@@ -107,13 +117,13 @@ namespace sync_donations_bm
 
         private void SynchronizeButton_Click(object sender, RoutedEventArgs e)
         {
-            string filePath = FilePathTextBox.Text;
-
-            if (string.IsNullOrWhiteSpace(filePath))
+            if (Overview == null || string.IsNullOrWhiteSpace(Overview.OverviewFilePath))
             {
-                MessageBox.Show("Please enter a file path.");
+                MessageBox.Show("Please select an overview file.");
                 return;
             }
+
+            string filePath = Overview.OverviewFilePath;
 
             if (!File.Exists(filePath))
             {
@@ -322,5 +332,16 @@ namespace sync_donations_bm
     public class Event
     {
         public string EventFile { get; set; }
+    }
+
+    public class Overview
+    {
+        public string OverviewFilePath { get; set; }
+    }
+
+    public class OverviewData
+    {
+        public Overview Overview { get; set; }
+        public List<Event> Events { get; set; }
     }
 }
