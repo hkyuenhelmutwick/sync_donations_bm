@@ -229,9 +229,14 @@ namespace sync_donations_bm
                         if (eventRow != null)
                         {
                             ICell eventDonationCell = eventRow.GetCell(donationColIndex);
-                            if (eventDonationCell != null)
+                            if (eventDonationCell != null && !string.IsNullOrEmpty(eventDonationCell.ToString()))
                             {
-                                string eventDonationAmount = eventDonationCell.ToString();
+                                // Construct the linkage formula
+                                string eventFileName = Path.GetFileName(eventFilePath);
+                                string eventFileDirectory = Path.GetDirectoryName(eventFilePath);
+                                string cellAddress = eventDonationCell.Address.ToString();
+                                string sheetName = eventSheet.SheetName;
+                                string linkageFormula = $"'{eventFileDirectory}\\[{eventFileName}]{sheetName}'!{cellAddress}";
 
                                 // Look for board member name in column A
                                 ICell eventBoardMemberCell = eventRow.GetCell(0); // Column A is index 0
@@ -243,7 +248,7 @@ namespace sync_donations_bm
                                     // Check if board member identifiers match
                                     if (eventBoardMemberId == boardMemberId)
                                     {
-                                        // Paste the donation amount to the overview file
+                                        // Paste the linkage formula to the overview file
                                         IRow overviewRow = overviewSheet.GetRow(overviewRowIndex);
                                         if (overviewRow != null)
                                         {
@@ -252,7 +257,7 @@ namespace sync_donations_bm
                                             {
                                                 overviewDonationCell = overviewRow.CreateCell(colIndex);
                                             }
-                                            overviewDonationCell.SetCellValue(eventDonationAmount);
+                                            overviewDonationCell.SetCellFormula(linkageFormula);
                                         }
                                     }
                                 }
