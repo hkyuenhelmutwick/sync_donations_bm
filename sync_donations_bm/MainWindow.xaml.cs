@@ -174,7 +174,14 @@ namespace sync_donations_bm
                         // Process the donation amount cell as needed
                         // For example, you can read the value or update it
                         string donationAmount = donationCell.ToString();
-                        // Do something with the donationAmount
+
+                        // Look for board member name under cell '董事會成員' in column A
+                        ICell boardMemberCell = donationRow.GetCell(0); // Column A is index 0
+                        if (boardMemberCell != null)
+                        {
+                            string boardMemberName = boardMemberCell.ToString();
+                            // Do something with the boardMemberName and donationAmount
+                        }
                     }
                 }
             }
