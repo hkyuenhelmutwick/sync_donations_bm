@@ -25,6 +25,10 @@ namespace sync_donations_bm
             Events = new ObservableCollection<Event>();
             EventsDataGrid.ItemsSource = Events;
             LoadEventsFromJson();
+            if (Overview != null && !string.IsNullOrWhiteSpace(Overview.OverviewFilePath))
+            {
+                FilePathTextBox.Text = Overview.OverviewFilePath;
+            }
         }
 
         private void LoadEventsFromJson()
