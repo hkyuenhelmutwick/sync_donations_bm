@@ -12,4 +12,10 @@
     <PackageReference Include="NPOI" Version="2.7.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="events.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

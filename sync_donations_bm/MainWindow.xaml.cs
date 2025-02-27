@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
@@ -12,6 +14,8 @@ namespace sync_donations_bm
 {
     public partial class MainWindow : Window
     {
+        private static readonly string JsonFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "events.json");
+        private static readonly string ProjectJsonFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "events.json");
         public ObservableCollection<Event> Events { get; set; }
 
         public MainWindow()
@@ -19,6 +23,31 @@ namespace sync_donations_bm
             InitializeComponent();
             Events = new ObservableCollection<Event>();
             EventsDataGrid.ItemsSource = Events;
+            LoadEventsFromJson();
+        }
+
+        private void LoadEventsFromJson()
+        {
+            if (File.Exists(JsonFilePath))
+            {
+                var json = File.ReadAllText(JsonFilePath);
+                var events = JsonSerializer.Deserialize<List<Event>>(json);
+                if (events != null)
+                {
+                    foreach (var eventItem in events)
+                    {
+                        Events.Add(eventItem);
+                    }
+                }
+            }
+        }
+
+        private void SaveEventsToJson()
+        {
+            var events = new List<Event>(Events);
+            var json = JsonSerializer.Serialize(events);
+            File.WriteAllText(JsonFilePath, json);
+            File.WriteAllText(ProjectJsonFilePath, json); // Update the project directory as well
         }
 
         private void BrowseButton_Click(object sender, RoutedEventArgs e)
@@ -57,6 +86,7 @@ namespace sync_donations_bm
                     {
                         Events.Add(new Event { EventFile = openFileDialog.FileName });
                     }
+                    SaveEventsToJson();
                 }
             }
         }
@@ -70,6 +100,7 @@ namespace sync_donations_bm
                 if (eventItem != null)
                 {
                     Events.Remove(eventItem);
+                    SaveEventsToJson();
                 }
             }
         }
@@ -125,6 +156,7 @@ namespace sync_donations_bm
                     }
 
                     MessageBox.Show("Overview file processed and updated.");
+                    SaveEventsToJson();
                 }
             }
             catch (Exception ex)
