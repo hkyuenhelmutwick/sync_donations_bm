@@ -109,36 +109,13 @@ namespace sync_donations_bm
                         return;
                     }
 
-                    var existingEventNames = new Dictionary<string, int>();
-                    for (int col = 5; col < row.LastCellNum; col++) // F is the sixth column (index 5)
-                    {
-                        ICell cell = row.GetCell(col);
-                        if (cell != null)
-                        {
-                            string eventName = cell.ToString().Replace("\r\n", string.Empty).Replace("\n", string.Empty);
-                            if (!string.IsNullOrEmpty(eventName))
-                            {
-                                existingEventNames[eventName] = col;
-                            }
-                        }
-                    }
+                    // Collect existing event names and their column indices
+                    var existingEventNames = CollectExistingEventNames(row);
 
+                    // Process each event file
                     foreach (var eventItem in Events)
                     {
-                        string eventFileName = Path.GetFileNameWithoutExtension(eventItem.EventFile);
-                        string eventFileNamePrefix = eventFileName.Split('_')[0]; // Get substring before underscore
-                        int colIndex;
-                        if (!existingEventNames.TryGetValue(eventFileNamePrefix, out colIndex))
-                        {
-                            // Add new event name to the overview file
-                            colIndex = row.LastCellNum;
-                            ICell newCell = row.CreateCell(colIndex);
-                            newCell.SetCellValue(eventFileNamePrefix);
-                            existingEventNames[eventFileNamePrefix] = colIndex;
-                        }
-
-                        // Process event donation amount cells
-                        ProcessDonationAmountCells(sheet, colIndex);
+                        ProcessEventFile(sheet, row, existingEventNames, eventItem);
                     }
 
                     // Save the updated workbook
@@ -156,12 +133,48 @@ namespace sync_donations_bm
             }
         }
 
-        private void ProcessDonationAmountCells(ISheet sheet, int colIndex)
+        private Dictionary<string, int> CollectExistingEventNames(IRow row)
         {
-            // Locate event donation amount cells (20 cells below event name)
-            for (int rowIndex = 3; rowIndex <= 23; rowIndex++) // 20 cells below row 3 is row 4 to row 24 (index 3 to 23)
+            var existingEventNames = new Dictionary<string, int>();
+            for (int col = 5; col < row.LastCellNum; col++) // F is the sixth column (index 5)
             {
-                IRow donationRow = sheet.GetRow(rowIndex);
+                ICell cell = row.GetCell(col);
+                if (cell != null)
+                {
+                    string eventName = cell.ToString().Replace("\r\n", string.Empty).Replace("\n", string.Empty);
+                    if (!string.IsNullOrEmpty(eventName))
+                    {
+                        existingEventNames[eventName] = col;
+                    }
+                }
+            }
+            return existingEventNames;
+        }
+
+        private void ProcessEventFile(ISheet sheet, IRow row, Dictionary<string, int> existingEventNames, Event eventItem)
+        {
+            string eventFileName = Path.GetFileNameWithoutExtension(eventItem.EventFile);
+            string eventFileNamePrefix = eventFileName.Split('_')[0]; // Get substring before underscore
+            int colIndex;
+            if (!existingEventNames.TryGetValue(eventFileNamePrefix, out colIndex))
+            {
+                // Add new event name to the overview file
+                colIndex = row.LastCellNum;
+                ICell newCell = row.CreateCell(colIndex);
+                newCell.SetCellValue(eventFileNamePrefix);
+                existingEventNames[eventFileNamePrefix] = colIndex;
+            }
+
+            // Process event donation amount cells
+            ProcessDonationAmountCells(sheet, colIndex, eventItem.EventFile);
+        }
+
+        private void ProcessDonationAmountCells(ISheet overviewSheet, int colIndex, string eventFilePath)
+        {
+            // Locate event donation amount cells (20 cells below event name) in the overview file
+            for (int rowIndex = 3; rowIndex <= 22; rowIndex++) // 20 cells below row 3 is row 4 to row 23 (index 3 to 22)
+            {
+                IRow donationRow = overviewSheet.GetRow(rowIndex);
                 if (donationRow != null)
                 {
                     ICell donationCell = donationRow.GetCell(colIndex);
@@ -176,11 +189,96 @@ namespace sync_donations_bm
                         if (boardMemberCell != null)
                         {
                             string boardMemberName = boardMemberCell.ToString();
-                            // Do something with the boardMemberName and donationAmount
+                            int boardMemberId = int.Parse(boardMemberName.Split('.')[0]); // Get identifier
+
+                            // Process event file to find matching donation amounts and board member names
+                            ProcessEventFileDetails(eventFilePath, overviewSheet, colIndex, boardMemberId, rowIndex);
                         }
                     }
                 }
             }
+        }
+
+        private void ProcessEventFileDetails(string eventFilePath, ISheet overviewSheet, int colIndex, int boardMemberId, int overviewRowIndex)
+        {
+            try
+            {
+                using (var eventFileStream = new FileStream(eventFilePath, FileMode.Open, FileAccess.Read))
+                {
+                    // Check for the sheet '贊助記錄總表'
+                    IWorkbook eventWorkbook = new XSSFWorkbook(eventFileStream);
+                    ISheet eventSheet = eventWorkbook.GetSheet("贊助記錄總表");
+                    if (eventSheet == null)
+                    {
+                        MessageBox.Show("Sheet '贊助記錄總表' not found in event file.");
+                        return;
+                    }
+
+                    // Find the column for '節目贊助金額'
+                    int donationColIndex = FindDonationColumnIndex(eventSheet);
+                    if (donationColIndex == -1)
+                    {
+                        MessageBox.Show("Column '節目贊助金額' not found in event file.");
+                        return;
+                    }
+
+                    // Process donation amount cells in the event file
+                    for (int rowIndex = 5; rowIndex <= 24; rowIndex++) // Row 6 to row 25 (index 5 to 24)
+                    {
+                        IRow eventRow = eventSheet.GetRow(rowIndex);
+                        if (eventRow != null)
+                        {
+                            ICell eventDonationCell = eventRow.GetCell(donationColIndex);
+                            if (eventDonationCell != null)
+                            {
+                                string eventDonationAmount = eventDonationCell.ToString();
+
+                                // Look for board member name in column A
+                                ICell eventBoardMemberCell = eventRow.GetCell(0); // Column A is index 0
+                                if (eventBoardMemberCell != null)
+                                {
+                                    string eventBoardMemberName = eventBoardMemberCell.ToString();
+                                    int eventBoardMemberId = int.Parse(eventBoardMemberName.Split('.')[0]); // Get identifier
+
+                                    // Check if board member identifiers match
+                                    if (eventBoardMemberId == boardMemberId)
+                                    {
+                                        // Paste the donation amount to the overview file
+                                        IRow overviewRow = overviewSheet.GetRow(overviewRowIndex);
+                                        if (overviewRow != null)
+                                        {
+                                            ICell overviewDonationCell = overviewRow.GetCell(colIndex);
+                                            if (overviewDonationCell == null)
+                                            {
+                                                overviewDonationCell = overviewRow.CreateCell(colIndex);
+                                            }
+                                            overviewDonationCell.SetCellValue(eventDonationAmount);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred while processing the event file: {ex.Message}");
+            }
+        }
+
+        private int FindDonationColumnIndex(ISheet eventSheet)
+        {
+            IRow headerRow = eventSheet.GetRow(1); // Row 2 is the second row (index 1)
+            for (int col = 0; col < headerRow.LastCellNum; col++)
+            {
+                ICell cell = headerRow.GetCell(col);
+                if (cell != null && cell.ToString().Replace("\r\n", string.Empty).Replace("\n", string.Empty) == "節目贊助金額")
+                {
+                    return col;
+                }
+            }
+            return -1;
         }
     }
 
