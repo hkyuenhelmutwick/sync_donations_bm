@@ -131,8 +131,16 @@ namespace sync_donations_bm
 
             if (!File.Exists(filePath))
             {
-                MessageBox.Show("File not found.");
-                return;
+                if (IsProductionEnvironment())
+                {
+                    // In production, continue without prompting an error
+                    return;
+                }
+                else
+                {
+                    MessageBox.Show("File not found.");
+                    return;
+                }
             }
 
             try
@@ -177,6 +185,12 @@ namespace sync_donations_bm
             {
                 MessageBox.Show($"An error occurred while processing the overview file: {ex.Message}");
             }
+        }
+
+        private bool IsProductionEnvironment()
+        {
+            // Check if only the events.json file exists in the bin directory
+            return File.Exists(JsonFilePath) && !File.Exists(ProjectJsonFilePath);
         }
 
         private Dictionary<string, int> CollectExistingEventNames(IRow row)
