@@ -224,11 +224,17 @@ namespace sync_donations_bm
                 newCell.SetCellValue(eventFileNamePrefix);
                 existingEventNames[eventFileNamePrefix] = colIndex;
 
+                // Copy style from the left-side cell
+                ICell leftCell = row.GetCell(colIndex - 1);
+                CopyCellStyle(leftCell, newCell);
+
                 // Create 21 cells under the new event name cell
                 for (int rowIndex = 3; rowIndex <= 23; rowIndex++) // 21 cells below row 3 is row 4 to row 24 (index 3 to 23)
                 {
                     IRow donationRow = sheet.GetRow(rowIndex) ?? sheet.CreateRow(rowIndex);
-                    donationRow.CreateCell(colIndex);
+                    ICell newDonationCell = donationRow.CreateCell(colIndex);
+                    ICell leftDonationCell = donationRow.GetCell(colIndex - 1);
+                    CopyCellStyle(leftDonationCell, newDonationCell);
                 }
             }
 
@@ -336,6 +342,16 @@ namespace sync_donations_bm
                     IRow totalRow = overviewSheet.GetRow(23) ?? overviewSheet.CreateRow(23); // Row 24 (index 23)
                     ICell totalCell = totalRow.GetCell(colIndex) ?? totalRow.CreateCell(colIndex);
                     totalCell.SetCellFormula($"SUM({GetCellAddress(3, colIndex)}:{GetCellAddress(22, colIndex)})");
+
+                    // Format the totalCell as currency
+                    ICellStyle currencyStyle = overviewSheet.Workbook.CreateCellStyle();
+                    IDataFormat dataFormat = overviewSheet.Workbook.CreateDataFormat();
+                    currencyStyle.DataFormat = dataFormat.GetFormat("$#,##0");
+                    totalCell.CellStyle = currencyStyle;
+
+                    // Copy style from the left-side cell
+                    ICell leftTotalCell = totalRow.GetCell(colIndex - 1);
+                    CopyCellStyle(leftTotalCell, totalCell);
                 }
             }
             catch (Exception ex)
@@ -361,6 +377,14 @@ namespace sync_donations_bm
                 }
             }
             return -1;
+        }
+
+        private void CopyCellStyle(ICell sourceCell, ICell targetCell)
+        {
+            if (sourceCell != null && targetCell != null)
+            {
+                targetCell.CellStyle = sourceCell.CellStyle;
+            }
         }
     }
 
