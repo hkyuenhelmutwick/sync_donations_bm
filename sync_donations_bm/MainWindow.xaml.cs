@@ -224,8 +224,8 @@ namespace sync_donations_bm
                 newCell.SetCellValue(eventFileNamePrefix);
                 existingEventNames[eventFileNamePrefix] = colIndex;
 
-                // Create 20 cells under the new event name cell
-                for (int rowIndex = 3; rowIndex <= 22; rowIndex++) // 20 cells below row 3 is row 4 to row 23 (index 3 to 22)
+                // Create 21 cells under the new event name cell
+                for (int rowIndex = 3; rowIndex <= 23; rowIndex++) // 21 cells below row 3 is row 4 to row 24 (index 3 to 23)
                 {
                     IRow donationRow = sheet.GetRow(rowIndex) ?? sheet.CreateRow(rowIndex);
                     donationRow.CreateCell(colIndex);
@@ -331,12 +331,22 @@ namespace sync_donations_bm
                             }
                         }
                     }
+
+                    // Use the SUM function to calculate the total amount of overviewDonationCells from row 4 to row 23 and place the sum in row 24
+                    IRow totalRow = overviewSheet.GetRow(23) ?? overviewSheet.CreateRow(23); // Row 24 (index 23)
+                    ICell totalCell = totalRow.GetCell(colIndex) ?? totalRow.CreateCell(colIndex);
+                    totalCell.SetCellFormula($"SUM({GetCellAddress(3, colIndex)}:{GetCellAddress(22, colIndex)})");
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"An error occurred while processing the event file: {ex.Message}");
             }
+        }
+
+        private string GetCellAddress(int rowIndex, int colIndex)
+        {
+            return $"{(char)('A' + colIndex)}{rowIndex + 1}";
         }
 
         private int FindDonationColumnIndex(ISheet eventSheet)
