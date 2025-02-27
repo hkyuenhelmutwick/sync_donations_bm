@@ -127,22 +127,18 @@ namespace sync_donations_bm
                     {
                         string eventFileName = Path.GetFileNameWithoutExtension(eventItem.EventFile);
                         string eventFileNamePrefix = eventFileName.Split('_')[0]; // Get substring before underscore
-                        if (existingEventNames.TryGetValue(eventFileNamePrefix, out int colIndex))
-                        {
-                            // Process existing event donation amount cells
-                            ProcessDonationAmountCells(sheet, colIndex);
-                        }
-                        else
+                        int colIndex;
+                        if (!existingEventNames.TryGetValue(eventFileNamePrefix, out colIndex))
                         {
                             // Add new event name to the overview file
-                            int newColIndex = row.LastCellNum;
-                            ICell newCell = row.CreateCell(newColIndex);
+                            colIndex = row.LastCellNum;
+                            ICell newCell = row.CreateCell(colIndex);
                             newCell.SetCellValue(eventFileNamePrefix);
-                            existingEventNames[eventFileNamePrefix] = newColIndex;
-
-                            // Process new event donation amount cells
-                            ProcessDonationAmountCells(sheet, newColIndex);
+                            existingEventNames[eventFileNamePrefix] = colIndex;
                         }
+
+                        // Process event donation amount cells
+                        ProcessDonationAmountCells(sheet, colIndex);
                     }
 
                     // Save the updated workbook
