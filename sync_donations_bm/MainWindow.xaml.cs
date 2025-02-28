@@ -6,9 +6,12 @@ using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using Microsoft.Win32;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using NLog;
+using NLog.Targets;
 
 namespace sync_donations_bm
 {
@@ -16,18 +19,61 @@ namespace sync_donations_bm
     {
         private static readonly string JsonFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "events.json");
         private static readonly string ProjectJsonFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "events.json");
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public ObservableCollection<Event> Events { get; set; }
+        public ObservableCollection<string> LogMessages { get; set; }
         public Overview Overview { get; set; }
+        private DispatcherTimer logUpdateTimer;
 
         public MainWindow()
         {
             InitializeComponent();
             Events = new ObservableCollection<Event>();
+            LogMessages = new ObservableCollection<string>();
             EventsDataGrid.ItemsSource = Events;
+            LogMessagesListBox.ItemsSource = LogMessages;
             LoadEventsFromJson();
             if (Overview != null && !string.IsNullOrWhiteSpace(Overview.OverviewFilePath))
             {
                 FilePathTextBox.Text = Overview.OverviewFilePath;
+            }
+            ConfigureNLogMemoryTarget();
+            StartLogUpdateTimer();
+        }
+
+        private void ConfigureNLogMemoryTarget()
+        {
+            var memoryTarget = LogManager.Configuration.FindTargetByName<MemoryTarget>("memory");
+            if (memoryTarget != null)
+            {
+                // Initial load of existing logs
+                foreach (var log in memoryTarget.Logs)
+                {
+                    LogMessages.Add(log);
+                }
+            }
+        }
+
+        private void StartLogUpdateTimer()
+        {
+            logUpdateTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            logUpdateTimer.Tick += (s, e) => UpdateLogMessages();
+            logUpdateTimer.Start();
+        }
+
+        private void UpdateLogMessages()
+        {
+            var memoryTarget = LogManager.Configuration.FindTargetByName<MemoryTarget>("memory");
+            if (memoryTarget != null)
+            {
+                LogMessages.Clear();
+                foreach (var log in memoryTarget.Logs)
+                {
+                    LogMessages.Add(log);
+                }
             }
         }
 
@@ -121,8 +167,11 @@ namespace sync_donations_bm
 
         private void SynchronizeButton_Click(object sender, RoutedEventArgs e)
         {
+            Logger.Info("Synchronize button clicked.");
+
             if (Overview == null || string.IsNullOrWhiteSpace(Overview.OverviewFilePath))
             {
+                Logger.Warn("Overview file path is not set.");
                 MessageBox.Show("Please select an overview file.");
                 return;
             }
@@ -133,11 +182,12 @@ namespace sync_donations_bm
             {
                 if (IsProductionEnvironment())
                 {
-                    // In production, continue without prompting an error
+                    Logger.Warn("File not found in production environment.");
                     return;
                 }
                 else
                 {
+                    Logger.Error("File not found.");
                     MessageBox.Show("File not found.");
                     return;
                 }
@@ -151,6 +201,7 @@ namespace sync_donations_bm
                     ISheet sheet = workbook.GetSheet("節目贊助");
                     if (sheet == null)
                     {
+                        Logger.Error("Sheet '節目贊助' not found.");
                         MessageBox.Show("Sheet '節目贊助' not found.");
                         return;
                     }
@@ -158,31 +209,31 @@ namespace sync_donations_bm
                     IRow row = sheet.GetRow(2); // F3 is the third row (index 2)
                     if (row == null)
                     {
+                        Logger.Error("Row 3 not found.");
                         MessageBox.Show("Row 3 not found.");
                         return;
                     }
 
-                    // Collect existing event names and their column indices
                     var existingEventNames = CollectExistingEventNames(row);
 
-                    // Process each event file
                     foreach (var eventItem in Events)
                     {
                         ProcessEventFile(sheet, row, existingEventNames, eventItem);
                     }
 
-                    // Save the updated workbook
                     using (var outputStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
                     {
                         workbook.Write(outputStream);
                     }
 
+                    Logger.Info("Overview file processed and updated.");
                     MessageBox.Show("Overview file processed and updated.");
                     SaveEventsToJson();
                 }
             }
             catch (Exception ex)
             {
+                Logger.Error(ex, "An error occurred while processing the overview file.");
                 MessageBox.Show($"An error occurred while processing the overview file: {ex.Message}");
             }
         }
