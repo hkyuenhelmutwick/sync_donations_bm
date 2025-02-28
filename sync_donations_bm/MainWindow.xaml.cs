@@ -49,7 +49,7 @@ namespace sync_donations_bm
                 // Initial load of existing logs
                 foreach (var log in memoryTarget.Logs)
                 {
-                    LogMessages.Add(log);
+                    LogMessages.Insert(0, log); // Insert at the top
                 }
             }
         }
@@ -70,7 +70,7 @@ namespace sync_donations_bm
             if (memoryTarget != null)
             {
                 LogMessages.Clear();
-                foreach (var log in memoryTarget.Logs)
+                foreach (var log in memoryTarget.Logs.Reverse())
                 {
                     LogMessages.Add(log);
                 }
@@ -168,6 +168,9 @@ namespace sync_donations_bm
         private void SynchronizeButton_Click(object sender, RoutedEventArgs e)
         {
             Logger.Info("Synchronize button clicked.");
+
+            // Switch to the Log Messages tab
+            MainTabControl.SelectedIndex = 1;
 
             if (Overview == null || string.IsNullOrWhiteSpace(Overview.OverviewFilePath))
             {

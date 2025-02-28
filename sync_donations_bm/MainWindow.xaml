@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <TabControl>
+        <TabControl x:Name="MainTabControl">
             <!-- First tab for event file path input -->
             <TabItem Header="Event File Path">
                 <Grid>
