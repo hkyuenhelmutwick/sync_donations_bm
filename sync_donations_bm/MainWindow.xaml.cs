@@ -70,7 +70,7 @@ namespace sync_donations_bm
             if (memoryTarget != null)
             {
                 LogMessages.Clear();
-                foreach (var log in memoryTarget.Logs.Reverse())
+                foreach (var log in memoryTarget.Logs)
                 {
                     LogMessages.Add(log);
                 }
@@ -267,6 +267,7 @@ namespace sync_donations_bm
 
         private void ProcessEventFile(ISheet sheet, IRow row, Dictionary<string, int> existingEventNames, Event eventItem)
         {
+            Logger.Info($"Processing event file: {eventItem.EventFile}");
             string eventFileName = Path.GetFileNameWithoutExtension(eventItem.EventFile);
             string eventFileNamePrefix = eventFileName.Split('_')[0]; // Get substring before underscore
             int colIndex;
@@ -294,10 +295,12 @@ namespace sync_donations_bm
 
             // Process event donation amount cells
             ProcessDonationAmountCells(sheet, colIndex, eventItem.EventFile);
+            Logger.Info($"Finished processing event file: {eventItem.EventFile}");
         }
 
         private void ProcessDonationAmountCells(ISheet overviewSheet, int colIndex, string eventFilePath)
         {
+            Logger.Info($"Processing donation amount cells for event file: {eventFilePath}");
             // Locate event donation amount cells (20 cells below event name) in the overview file
             for (int rowIndex = 3; rowIndex <= 22; rowIndex++) // 20 cells below row 3 is row 4 to row 23 (index 3 to 22)
             {
@@ -324,10 +327,12 @@ namespace sync_donations_bm
                     }
                 }
             }
+            Logger.Info($"Finished processing donation amount cells for event file: {eventFilePath}");
         }
 
         private void ProcessEventFileDetails(string eventFilePath, ISheet overviewSheet, int colIndex, int boardMemberId, int overviewRowIndex)
         {
+            Logger.Info($"Processing event file details for event file: {eventFilePath}, board member ID: {boardMemberId}");
             try
             {
                 using (var eventFileStream = new FileStream(eventFilePath, FileMode.Open, FileAccess.Read))
@@ -410,8 +415,10 @@ namespace sync_donations_bm
             }
             catch (Exception ex)
             {
+                Logger.Error(ex, $"An error occurred while processing the event file details for event file: {eventFilePath}");
                 MessageBox.Show($"An error occurred while processing the event file: {ex.Message}");
             }
+            Logger.Info($"Finished processing event file details for event file: {eventFilePath}, board member ID: {boardMemberId}");
         }
 
         private string GetCellAddress(int rowIndex, int colIndex)
