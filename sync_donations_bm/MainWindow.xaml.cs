@@ -173,8 +173,8 @@ namespace sync_donations_bm
             {
                 memoryTarget.Logs.Clear(); // Clear the memory target logs
             }
-            LogMessagesListBox.ItemsSource = null; // Clear the log messages list box
-            LogMessagesListBox.ItemsSource = LogMessages;
+            LogMessages.Clear();
+            LogMessagesListBox.ItemsSource = LogMessages; // Bind log messages to the list box
             Logger.Info("Synchronize button clicked.");
 
             if (Overview == null || string.IsNullOrWhiteSpace(Overview.OverviewFilePath))
@@ -188,17 +188,9 @@ namespace sync_donations_bm
 
             if (!File.Exists(filePath))
             {
-                if (IsProductionEnvironment())
-                {
-                    Logger.Warn("File not found in production environment.");
-                    return;
-                }
-                else
-                {
-                    Logger.Error("File not found.");
-                    MessageBox.Show("File not found.");
-                    return;
-                }
+                Logger.Warn("File not found.");
+                MessageBox.Show("File not found.");
+                return;
             }
 
             try
@@ -237,13 +229,7 @@ namespace sync_donations_bm
                         }
 
                         Logger.Info("Overview file processed and updated.");
-                        Dispatcher.Invoke(() =>
-                        {
-                            var result = MessageBox.Show("Overview file processed and updated.");
-                            if (result == MessageBoxResult.OK)
-                            {
-                            }
-                        });
+                        Dispatcher.Invoke(() => MessageBox.Show("Overview file processed and updated."));
                         SaveEventsToJson();
                     }
                 });
@@ -253,12 +239,6 @@ namespace sync_donations_bm
                 Logger.Error(ex, "An error occurred while processing the overview file.");
                 Dispatcher.Invoke(() => MessageBox.Show($"An error occurred while processing the overview file: {ex.Message}"));
             }
-        }
-
-        private bool IsProductionEnvironment()
-        {
-            // Check if only the events.json file exists in the bin directory
-            return File.Exists(JsonFilePath) && !File.Exists(ProjectJsonFilePath);
         }
 
         private Dictionary<string, int> CollectExistingEventNames(IRow row)
