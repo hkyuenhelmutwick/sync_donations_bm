@@ -168,6 +168,8 @@ namespace sync_donations_bm
 
         private async void SynchronizeButton_Click(object sender, RoutedEventArgs e)
         {
+            LogMessages.Clear();
+            LogMessagesListBox.ItemsSource = LogMessages; // Bind log messages to the list box
             Logger.Info("Synchronize button clicked.");
             UpdateLogMessages(); // Update log messages immediately
 
@@ -210,7 +212,6 @@ namespace sync_donations_bm
                         {
                             Logger.Error("Sheet '節目贊助' not found.");
                             Dispatcher.Invoke(() => MessageBox.Show("Sheet '節目贊助' not found."));
-                            UpdateLogMessages(); // Update log messages immediately
                             return;
                         }
 
@@ -219,7 +220,6 @@ namespace sync_donations_bm
                         {
                             Logger.Error("Row 3 not found.");
                             Dispatcher.Invoke(() => MessageBox.Show("Row 3 not found."));
-                            UpdateLogMessages(); // Update log messages immediately
                             return;
                         }
 
@@ -237,7 +237,15 @@ namespace sync_donations_bm
                         }
 
                         Logger.Info("Overview file processed and updated.");
-                        Dispatcher.Invoke(() => MessageBox.Show("Overview file processed and updated."));
+                        Dispatcher.Invoke(() =>
+                        {
+                            var result = MessageBox.Show("Overview file processed and updated.");
+                            if (result == MessageBoxResult.OK)
+                            {
+                                LogMessagesListBox.ItemsSource = null; // Clear log messages
+                                UpdateLogMessages(); // Update log messages after clearing
+                            }
+                        });
                         SaveEventsToJson();
                     }
                 });
