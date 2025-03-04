@@ -168,16 +168,19 @@ namespace sync_donations_bm
 
         private async void SynchronizeButton_Click(object sender, RoutedEventArgs e)
         {
-            //LogMessages.Clear();
+            var memoryTarget = LogManager.Configuration.FindTargetByName<MemoryTarget>("memory");
+            if (memoryTarget != null)
+            {
+                memoryTarget.Logs.Clear(); // Clear the memory target logs
+            }
+            LogMessagesListBox.ItemsSource = null; // Clear the log messages list box
             LogMessagesListBox.ItemsSource = LogMessages;
             Logger.Info("Synchronize button clicked.");
-            UpdateLogMessages(); // Update log messages immediately
 
             if (Overview == null || string.IsNullOrWhiteSpace(Overview.OverviewFilePath))
             {
                 Logger.Warn("Overview file path is not set.");
                 MessageBox.Show("Please select an overview file.");
-                UpdateLogMessages(); // Update log messages immediately
                 return;
             }
 
@@ -188,14 +191,12 @@ namespace sync_donations_bm
                 if (IsProductionEnvironment())
                 {
                     Logger.Warn("File not found in production environment.");
-                    UpdateLogMessages(); // Update log messages immediately
                     return;
                 }
                 else
                 {
                     Logger.Error("File not found.");
                     MessageBox.Show("File not found.");
-                    UpdateLogMessages(); // Update log messages immediately
                     return;
                 }
             }
@@ -228,7 +229,6 @@ namespace sync_donations_bm
                         foreach (var eventItem in Events)
                         {
                             ProcessEventFile(sheet, row, existingEventNames, eventItem);
-                            Dispatcher.Invoke(() => UpdateLogMessages()); // Update log messages after processing each event file
                         }
 
                         using (var outputStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
@@ -242,14 +242,6 @@ namespace sync_donations_bm
                             var result = MessageBox.Show("Overview file processed and updated.");
                             if (result == MessageBoxResult.OK)
                             {
-                                //LogMessages.Clear();
-                                var memoryTarget = LogManager.Configuration.FindTargetByName<MemoryTarget>("memory");
-                                if (memoryTarget != null)
-                                {
-                                    memoryTarget.Logs.Clear(); // Clear the memory target logs
-                                }
-                                LogMessagesListBox.ItemsSource = null; // Clear the log messages list box
-                                UpdateLogMessages(); // Update log messages after clearing
                             }
                         });
                         SaveEventsToJson();
@@ -261,8 +253,6 @@ namespace sync_donations_bm
                 Logger.Error(ex, "An error occurred while processing the overview file.");
                 Dispatcher.Invoke(() => MessageBox.Show($"An error occurred while processing the overview file: {ex.Message}"));
             }
-
-            UpdateLogMessages(); // Update log messages at the end of the process
         }
 
         private bool IsProductionEnvironment()
