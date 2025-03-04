@@ -332,7 +332,11 @@ namespace sync_donations_bm
                             int boardMemberId = int.Parse(boardMemberName.Split('.')[0]); // Get identifier
 
                             // Process event file to find matching donation amounts and board member names
-                            ProcessEventFileDetails(eventFilePath, overviewSheet, colIndex, boardMemberId, rowIndex);
+                            if(!ProcessEventFileDetails(eventFilePath, overviewSheet, colIndex, boardMemberId, rowIndex))
+                            {
+                                Logger.Warn($"Board member {boardMemberName} not found in event file: {eventFilePath}");
+                                Dispatcher.Invoke(() => MessageBox.Show($"Board member {boardMemberName} not found in event file: {eventFilePath}"));
+                            }
                         }
                     }
                 }
@@ -340,9 +344,10 @@ namespace sync_donations_bm
             Logger.Info($"Finished processing donation amount cells for event file: {eventFilePath}");
         }
 
-        private void ProcessEventFileDetails(string eventFilePath, ISheet overviewSheet, int colIndex, int boardMemberId, int overviewRowIndex)
+        private bool ProcessEventFileDetails(string eventFilePath, ISheet overviewSheet, int colIndex, int boardMemberId, int overviewRowIndex)
         {
             Logger.Info($"Processing event file details for event file: {eventFilePath}, board member ID: {boardMemberId}");
+            bool found = false;
             try
             {
                 using (var eventFileStream = new FileStream(eventFilePath, FileMode.Open, FileAccess.Read))
@@ -353,7 +358,7 @@ namespace sync_donations_bm
                     if (eventSheet == null)
                     {
                         Dispatcher.Invoke(() => MessageBox.Show("Sheet '贊助記錄總表' not found in event file."));
-                        return;
+                        return false;
                     }
 
                     // Find the column for '節目贊助金額'
@@ -361,68 +366,102 @@ namespace sync_donations_bm
                     if (donationColIndex == -1)
                     {
                         Dispatcher.Invoke(() => MessageBox.Show("Column '節目贊助金額' not found in event file."));
-                        return;
+                        return false;
                     }
 
-                    // Process donation amount cells in the event file
+                    // Collect all board member IDs from the event file
+                    var eventBoardMemberIds = new HashSet<int>();
                     for (int rowIndex = 5; rowIndex <= 24; rowIndex++) // Row 6 to row 25 (index 5 to 24)
                     {
                         IRow eventRow = eventSheet.GetRow(rowIndex);
                         if (eventRow != null)
                         {
-                            ICell eventDonationCell = eventRow.GetCell(donationColIndex);
-                            if (eventDonationCell != null && !string.IsNullOrEmpty(eventDonationCell.ToString()))
+                            ICell eventBoardMemberCell = eventRow.GetCell(0); // Column A is index 0
+                            if (eventBoardMemberCell != null)
                             {
-                                // Construct the linkage formula
-                                string eventFileName = Path.GetFileName(eventFilePath);
-                                string eventFileDirectory = Path.GetDirectoryName(eventFilePath);
-                                string cellAddress = eventDonationCell.Address.ToString();
-                                string sheetName = eventSheet.SheetName;
-                                string linkageFormula = $"'{eventFileDirectory}\\[{eventFileName}]{sheetName}'!{cellAddress}";
-
-                                // Look for board member name in column A
-                                ICell eventBoardMemberCell = eventRow.GetCell(0); // Column A is index 0
-                                if (eventBoardMemberCell != null)
+                                string eventBoardMemberName = eventBoardMemberCell.ToString();
+                                try
                                 {
-                                    string eventBoardMemberName = eventBoardMemberCell.ToString();
                                     int eventBoardMemberId = int.Parse(eventBoardMemberName.Split('.')[0]); // Get identifier
-
-                                    // Check if board member identifiers match
-                                    if (eventBoardMemberId == boardMemberId)
-                                    {
-                                        // Paste the linkage formula to the overview file
-                                        IRow overviewRow = overviewSheet.GetRow(overviewRowIndex);
-                                        if (overviewRow != null)
-                                        {
-                                            ICell overviewDonationCell = overviewRow.GetCell(colIndex);
-                                            if (overviewDonationCell == null)
-                                            {
-                                                overviewDonationCell = overviewRow.CreateCell(colIndex);
-                                            }
-                                            overviewDonationCell.SetCellFormula(linkageFormula);
-                                        }
-
-                                        break; // Stop processing the event file details for the current board member
-                                    }
+                                    eventBoardMemberIds.Add(eventBoardMemberId);
+                                }
+                                catch (FormatException)
+                                {
+                                    Logger.Warn($"Unable to parse board member ID from name: {eventBoardMemberName}");
                                 }
                             }
                         }
                     }
 
-                    // Use the SUM function to calculate the total amount of overviewDonationCells from row 4 to row 23 and place the sum in row 24
-                    IRow totalRow = overviewSheet.GetRow(23) ?? overviewSheet.CreateRow(23); // Row 24 (index 23)
-                    ICell totalCell = totalRow.GetCell(colIndex) ?? totalRow.CreateCell(colIndex);
-                    totalCell.SetCellFormula($"SUM({GetCellAddress(3, colIndex)}:{GetCellAddress(22, colIndex)})");
+                    // Check if the board member ID from the overview file is in the event file
+                    if (eventBoardMemberIds.Contains(boardMemberId))
+                    {
+                        found = true;
 
-                    // Format the totalCell as currency
-                    ICellStyle currencyStyle = overviewSheet.Workbook.CreateCellStyle();
-                    IDataFormat dataFormat = overviewSheet.Workbook.CreateDataFormat();
-                    currencyStyle.DataFormat = dataFormat.GetFormat("$#,##0");
-                    totalCell.CellStyle = currencyStyle;
+                        // Process donation amount cells in the event file
+                        for (int rowIndex = 5; rowIndex <= 24; rowIndex++) // Row 6 to row 25 (index 5 to 24)
+                        {
+                            IRow eventRow = eventSheet.GetRow(rowIndex);
+                            if (eventRow != null)
+                            {
+                                ICell eventBoardMemberCell = eventRow.GetCell(0); // Column A is index 0
+                                if (eventBoardMemberCell != null)
+                                {
+                                    string eventBoardMemberName = eventBoardMemberCell.ToString();
+                                    try
+                                    {
+                                        int eventBoardMemberId = int.Parse(eventBoardMemberName.Split('.')[0]); // Get identifier
 
-                    // Copy style from the left-side cell
-                    ICell leftTotalCell = totalRow.GetCell(colIndex - 1);
-                    CopyCellStyle(leftTotalCell, totalCell);
+                                        // Check if board member identifiers match
+                                        if (eventBoardMemberId == boardMemberId)
+                                        {
+                                            ICell eventDonationCell = eventRow.GetCell(donationColIndex);
+                                            if (eventDonationCell != null && !string.IsNullOrEmpty(eventDonationCell.ToString()))
+                                            {
+                                                // Construct the linkage formula
+                                                string eventFileName = Path.GetFileName(eventFilePath);
+                                                string eventFileDirectory = Path.GetDirectoryName(eventFilePath);
+                                                string cellAddress = eventDonationCell.Address.ToString();
+                                                string sheetName = eventSheet.SheetName;
+                                                string linkageFormula = $"'{eventFileDirectory}\\[{eventFileName}]{sheetName}'!{cellAddress}";
+
+                                                // Paste the linkage formula to the overview file
+                                                IRow overviewRow = overviewSheet.GetRow(overviewRowIndex);
+                                                if (overviewRow != null)
+                                                {
+                                                    ICell overviewDonationCell = overviewRow.GetCell(colIndex);
+                                                    if (overviewDonationCell == null)
+                                                    {
+                                                        overviewDonationCell = overviewRow.CreateCell(colIndex);
+                                                    }
+                                                    overviewDonationCell.SetCellFormula(linkageFormula);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch (FormatException)
+                                    {
+                                        Logger.Warn($"Unable to parse board member ID from name: {eventBoardMemberName}");
+                                    }
+                                }
+                            }
+                        }
+
+                        // Use the SUM function to calculate the total amount of overviewDonationCells from row 4 to row 23 and place the sum in row 24
+                        IRow totalRow = overviewSheet.GetRow(23) ?? overviewSheet.CreateRow(23); // Row 24 (index 23)
+                        ICell totalCell = totalRow.GetCell(colIndex) ?? totalRow.CreateCell(colIndex);
+                        totalCell.SetCellFormula($"SUM({GetCellAddress(3, colIndex)}:{GetCellAddress(22, colIndex)})");
+
+                        // Format the totalCell as currency
+                        ICellStyle currencyStyle = overviewSheet.Workbook.CreateCellStyle();
+                        IDataFormat dataFormat = overviewSheet.Workbook.CreateDataFormat();
+                        currencyStyle.DataFormat = dataFormat.GetFormat("$#,##0");
+                        totalCell.CellStyle = currencyStyle;
+
+                        // Copy style from the left-side cell
+                        ICell leftTotalCell = totalRow.GetCell(colIndex - 1);
+                        CopyCellStyle(leftTotalCell, totalCell);
+                    }
                 }
             }
             catch (Exception ex)
@@ -431,6 +470,7 @@ namespace sync_donations_bm
                 Dispatcher.Invoke(() => MessageBox.Show($"An error occurred while processing the event file: {ex.Message}"));
             }
             Logger.Info($"Finished processing event file details for event file: {eventFilePath}, board member ID: {boardMemberId}");
+            return found;
         }
 
         private string GetCellAddress(int rowIndex, int colIndex)
