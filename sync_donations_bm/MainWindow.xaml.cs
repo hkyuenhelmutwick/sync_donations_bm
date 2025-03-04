@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -165,7 +166,7 @@ namespace sync_donations_bm
             }
         }
 
-        private void SynchronizeButton_Click(object sender, RoutedEventArgs e)
+        private async void SynchronizeButton_Click(object sender, RoutedEventArgs e)
         {
             Logger.Info("Synchronize button clicked.");
             UpdateLogMessages(); // Update log messages immediately
@@ -199,49 +200,52 @@ namespace sync_donations_bm
 
             try
             {
-                using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                await Task.Run(() =>
                 {
-                    IWorkbook workbook = new XSSFWorkbook(fileStream);
-                    ISheet sheet = workbook.GetSheet("節目贊助");
-                    if (sheet == null)
+                    using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                     {
-                        Logger.Error("Sheet '節目贊助' not found.");
-                        MessageBox.Show("Sheet '節目贊助' not found.");
-                        UpdateLogMessages(); // Update log messages immediately
-                        return;
+                        IWorkbook workbook = new XSSFWorkbook(fileStream);
+                        ISheet sheet = workbook.GetSheet("節目贊助");
+                        if (sheet == null)
+                        {
+                            Logger.Error("Sheet '節目贊助' not found.");
+                            Dispatcher.Invoke(() => MessageBox.Show("Sheet '節目贊助' not found."));
+                            UpdateLogMessages(); // Update log messages immediately
+                            return;
+                        }
+
+                        IRow row = sheet.GetRow(2); // F3 is the third row (index 2)
+                        if (row == null)
+                        {
+                            Logger.Error("Row 3 not found.");
+                            Dispatcher.Invoke(() => MessageBox.Show("Row 3 not found."));
+                            UpdateLogMessages(); // Update log messages immediately
+                            return;
+                        }
+
+                        var existingEventNames = CollectExistingEventNames(row);
+
+                        foreach (var eventItem in Events)
+                        {
+                            ProcessEventFile(sheet, row, existingEventNames, eventItem);
+                            Dispatcher.Invoke(() => UpdateLogMessages()); // Update log messages after processing each event file
+                        }
+
+                        using (var outputStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                        {
+                            workbook.Write(outputStream);
+                        }
+
+                        Logger.Info("Overview file processed and updated.");
+                        Dispatcher.Invoke(() => MessageBox.Show("Overview file processed and updated."));
+                        SaveEventsToJson();
                     }
-
-                    IRow row = sheet.GetRow(2); // F3 is the third row (index 2)
-                    if (row == null)
-                    {
-                        Logger.Error("Row 3 not found.");
-                        MessageBox.Show("Row 3 not found.");
-                        UpdateLogMessages(); // Update log messages immediately
-                        return;
-                    }
-
-                    var existingEventNames = CollectExistingEventNames(row);
-
-                    foreach (var eventItem in Events)
-                    {
-                        ProcessEventFile(sheet, row, existingEventNames, eventItem);
-                        UpdateLogMessages(); // Update log messages after processing each event file
-                    }
-
-                    using (var outputStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
-                    {
-                        workbook.Write(outputStream);
-                    }
-
-                    Logger.Info("Overview file processed and updated.");
-                    MessageBox.Show("Overview file processed and updated.");
-                    SaveEventsToJson();
-                }
+                });
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, "An error occurred while processing the overview file.");
-                MessageBox.Show($"An error occurred while processing the overview file: {ex.Message}");
+                Dispatcher.Invoke(() => MessageBox.Show($"An error occurred while processing the overview file: {ex.Message}"));
             }
 
             UpdateLogMessages(); // Update log messages at the end of the process
@@ -348,7 +352,7 @@ namespace sync_donations_bm
                     ISheet eventSheet = eventWorkbook.GetSheet("贊助記錄總表");
                     if (eventSheet == null)
                     {
-                        MessageBox.Show("Sheet '贊助記錄總表' not found in event file.");
+                        Dispatcher.Invoke(() => MessageBox.Show("Sheet '贊助記錄總表' not found in event file."));
                         return;
                     }
 
@@ -356,7 +360,7 @@ namespace sync_donations_bm
                     int donationColIndex = FindDonationColumnIndex(eventSheet);
                     if (donationColIndex == -1)
                     {
-                        MessageBox.Show("Column '節目贊助金額' not found in event file.");
+                        Dispatcher.Invoke(() => MessageBox.Show("Column '節目贊助金額' not found in event file."));
                         return;
                     }
 
@@ -422,7 +426,7 @@ namespace sync_donations_bm
             catch (Exception ex)
             {
                 Logger.Error(ex, $"An error occurred while processing the event file details for event file: {eventFilePath}");
-                MessageBox.Show($"An error occurred while processing the event file: {ex.Message}");
+                Dispatcher.Invoke(() => MessageBox.Show($"An error occurred while processing the event file: {ex.Message}"));
             }
             Logger.Info($"Finished processing event file details for event file: {eventFilePath}, board member ID: {boardMemberId}");
         }
