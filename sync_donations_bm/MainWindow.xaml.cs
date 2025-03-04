@@ -169,9 +169,6 @@ namespace sync_donations_bm
         {
             Logger.Info("Synchronize button clicked.");
 
-            // Switch to the Log Messages tab
-            MainTabControl.SelectedIndex = 1;
-
             if (Overview == null || string.IsNullOrWhiteSpace(Overview.OverviewFilePath))
             {
                 Logger.Warn("Overview file path is not set.");
