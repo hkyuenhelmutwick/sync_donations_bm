@@ -168,8 +168,8 @@ namespace sync_donations_bm
 
         private async void SynchronizeButton_Click(object sender, RoutedEventArgs e)
         {
-            LogMessages.Clear();
-            LogMessagesListBox.ItemsSource = LogMessages; // Bind log messages to the list box
+            //LogMessages.Clear();
+            LogMessagesListBox.ItemsSource = LogMessages;
             Logger.Info("Synchronize button clicked.");
             UpdateLogMessages(); // Update log messages immediately
 
@@ -242,7 +242,13 @@ namespace sync_donations_bm
                             var result = MessageBox.Show("Overview file processed and updated.");
                             if (result == MessageBoxResult.OK)
                             {
-                                LogMessagesListBox.ItemsSource = null; // Clear log messages
+                                //LogMessages.Clear();
+                                var memoryTarget = LogManager.Configuration.FindTargetByName<MemoryTarget>("memory");
+                                if (memoryTarget != null)
+                                {
+                                    memoryTarget.Logs.Clear(); // Clear the memory target logs
+                                }
+                                LogMessagesListBox.ItemsSource = null; // Clear the log messages list box
                                 UpdateLogMessages(); // Update log messages after clearing
                             }
                         });
