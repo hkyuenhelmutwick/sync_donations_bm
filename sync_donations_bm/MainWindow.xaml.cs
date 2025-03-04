@@ -401,6 +401,8 @@ namespace sync_donations_bm
                                             }
                                             overviewDonationCell.SetCellFormula(linkageFormula);
                                         }
+
+                                        break; // Stop processing the event file details for the current board member
                                     }
                                 }
                             }
