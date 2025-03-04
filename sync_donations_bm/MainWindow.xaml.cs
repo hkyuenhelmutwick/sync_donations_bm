@@ -58,7 +58,7 @@ namespace sync_donations_bm
         {
             logUpdateTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromSeconds(1)
+                Interval = TimeSpan.FromMilliseconds(200) // Update every 200 milliseconds
             };
             logUpdateTimer.Tick += (s, e) => UpdateLogMessages();
             logUpdateTimer.Start();
@@ -168,11 +168,13 @@ namespace sync_donations_bm
         private void SynchronizeButton_Click(object sender, RoutedEventArgs e)
         {
             Logger.Info("Synchronize button clicked.");
+            UpdateLogMessages(); // Update log messages immediately
 
             if (Overview == null || string.IsNullOrWhiteSpace(Overview.OverviewFilePath))
             {
                 Logger.Warn("Overview file path is not set.");
                 MessageBox.Show("Please select an overview file.");
+                UpdateLogMessages(); // Update log messages immediately
                 return;
             }
 
@@ -183,12 +185,14 @@ namespace sync_donations_bm
                 if (IsProductionEnvironment())
                 {
                     Logger.Warn("File not found in production environment.");
+                    UpdateLogMessages(); // Update log messages immediately
                     return;
                 }
                 else
                 {
                     Logger.Error("File not found.");
                     MessageBox.Show("File not found.");
+                    UpdateLogMessages(); // Update log messages immediately
                     return;
                 }
             }
@@ -203,6 +207,7 @@ namespace sync_donations_bm
                     {
                         Logger.Error("Sheet '節目贊助' not found.");
                         MessageBox.Show("Sheet '節目贊助' not found.");
+                        UpdateLogMessages(); // Update log messages immediately
                         return;
                     }
 
@@ -211,6 +216,7 @@ namespace sync_donations_bm
                     {
                         Logger.Error("Row 3 not found.");
                         MessageBox.Show("Row 3 not found.");
+                        UpdateLogMessages(); // Update log messages immediately
                         return;
                     }
 
@@ -219,6 +225,7 @@ namespace sync_donations_bm
                     foreach (var eventItem in Events)
                     {
                         ProcessEventFile(sheet, row, existingEventNames, eventItem);
+                        UpdateLogMessages(); // Update log messages after processing each event file
                     }
 
                     using (var outputStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
@@ -236,6 +243,8 @@ namespace sync_donations_bm
                 Logger.Error(ex, "An error occurred while processing the overview file.");
                 MessageBox.Show($"An error occurred while processing the overview file: {ex.Message}");
             }
+
+            UpdateLogMessages(); // Update log messages at the end of the process
         }
 
         private bool IsProductionEnvironment()
