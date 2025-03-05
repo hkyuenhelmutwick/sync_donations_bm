@@ -135,17 +135,29 @@ namespace sync_donations_bm
 
             if (openFileDialog.ShowDialog() == true)
             {
+                var selectedFileName = openFileDialog.FileName;
+                var existingEvent = Events.FirstOrDefault(ev => ev.EventFile == selectedFileName);
+
+                if (existingEvent != null)
+                {
+                    MessageBox.Show("The selected file is already added.", "Duplicate File", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 var button = sender as Button;
                 if (button != null)
                 {
                     var eventItem = button.DataContext as Event;
                     if (eventItem != null)
                     {
-                        eventItem.EventFile = openFileDialog.FileName;
+                        // Remove the original event and add a new one with the new file
+                        Events.Remove(eventItem);
+                        Events.Add(new Event { EventFile = selectedFileName });
                     }
                     else
                     {
-                        Events.Add(new Event { EventFile = openFileDialog.FileName });
+                        // Add a new event if no existing event is found
+                        Events.Add(new Event { EventFile = selectedFileName });
                     }
                     SaveEventsToJson();
                 }
