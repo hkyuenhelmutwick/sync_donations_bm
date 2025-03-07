@@ -13,6 +13,7 @@ using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using NLog;
 using NLog.Targets;
+using System.Windows.Input;
 
 namespace sync_donations_bm
 {
@@ -180,6 +181,8 @@ namespace sync_donations_bm
 
         private async void SynchronizeButton_Click(object sender, RoutedEventArgs e)
         {
+            Mouse.OverrideCursor = Cursors.Wait; // Set the cursor to the hourglass
+
             var memoryTarget = LogManager.Configuration.FindTargetByName<MemoryTarget>("memory");
             if (memoryTarget != null)
             {
@@ -193,6 +196,7 @@ namespace sync_donations_bm
             {
                 Logger.Warn("Overview file path is not set.");
                 MessageBox.Show("Please select an overview file.");
+                Mouse.OverrideCursor = null; // Reset the cursor to the default
                 return;
             }
 
@@ -202,6 +206,7 @@ namespace sync_donations_bm
             {
                 Logger.Warn("File not found.");
                 MessageBox.Show("File not found.");
+                Mouse.OverrideCursor = null; // Reset the cursor to the default
                 return;
             }
 
@@ -250,6 +255,10 @@ namespace sync_donations_bm
             {
                 Logger.Error(ex, "An error occurred while processing the overview file.");
                 Dispatcher.Invoke(() => MessageBox.Show($"An error occurred while processing the overview file: {ex.Message}"));
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null; // Reset the cursor to the default
             }
         }
 
