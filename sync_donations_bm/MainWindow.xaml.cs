@@ -27,20 +27,44 @@ namespace sync_donations_bm
         public Overview Overview { get; set; }
         private DispatcherTimer logUpdateTimer;
 
+        #region Initialization
+
         public MainWindow()
         {
+            // Initialize the main window
             InitializeComponent();
             Events = new ObservableCollection<Event>();
             LogMessages = new ObservableCollection<string>();
             EventsDataGrid.ItemsSource = Events;
             LogMessagesListBox.ItemsSource = LogMessages;
+
+            // Load events and overview
             LoadEventsFromJson();
             if (Overview != null && !string.IsNullOrWhiteSpace(Overview.OverviewFilePath))
             {
                 FilePathTextBox.Text = Overview.OverviewFilePath;
             }
+
+            // Set Logging Configuration
             ConfigureNLogMemoryTarget();
             StartLogUpdateTimer();
+        }
+
+        private void LoadEventsFromJson()
+        {
+            if (File.Exists(JsonFilePath))
+            {
+                var json = File.ReadAllText(JsonFilePath);
+                var data = JsonSerializer.Deserialize<OverviewData>(json);
+                if (data != null)
+                {
+                    Overview = data.Overview;
+                    foreach (var eventItem in data.Events)
+                    {
+                        Events.Add(eventItem);
+                    }
+                }
+            }
         }
 
         private void ConfigureNLogMemoryTarget()
@@ -79,36 +103,11 @@ namespace sync_donations_bm
             }
         }
 
-        private void LoadEventsFromJson()
-        {
-            if (File.Exists(JsonFilePath))
-            {
-                var json = File.ReadAllText(JsonFilePath);
-                var data = JsonSerializer.Deserialize<OverviewData>(json);
-                if (data != null)
-                {
-                    Overview = data.Overview;
-                    foreach (var eventItem in data.Events)
-                    {
-                        Events.Add(eventItem);
-                    }
-                }
-            }
-        }
+        #endregion
 
-        private void SaveEventsToJson()
-        {
-            var data = new OverviewData
-            {
-                Overview = Overview,
-                Events = new List<Event>(Events)
-            };
-            var json = JsonSerializer.Serialize(data);
-            File.WriteAllText(JsonFilePath, json);
-            File.WriteAllText(ProjectJsonFilePath, json); // Update the project directory as well
-        }
+        #region Buttons Event Handlers
 
-        private void BrowseButton_Click(object sender, RoutedEventArgs e)
+        private void BrowseOverviewFileButton_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
@@ -183,6 +182,7 @@ namespace sync_donations_bm
         {
             Mouse.OverrideCursor = Cursors.Wait; // Set the cursor to the hourglass
 
+            // Clear the memory target logs
             var memoryTarget = LogManager.Configuration.FindTargetByName<MemoryTarget>("memory");
             if (memoryTarget != null)
             {
@@ -192,6 +192,7 @@ namespace sync_donations_bm
             LogMessagesListBox.ItemsSource = LogMessages; // Bind log messages to the list box
             Logger.Info("Synchronize button clicked.");
 
+            // Validate the overview file path
             if (Overview == null || string.IsNullOrWhiteSpace(Overview.OverviewFilePath))
             {
                 Logger.Warn("Overview file path is not set.");
@@ -199,9 +200,7 @@ namespace sync_donations_bm
                 Mouse.OverrideCursor = null; // Reset the cursor to the default
                 return;
             }
-
             string filePath = Overview.OverviewFilePath;
-
             if (!File.Exists(filePath))
             {
                 Logger.Warn("File not found.");
@@ -210,6 +209,7 @@ namespace sync_donations_bm
                 return;
             }
 
+            // Process the overview file
             try
             {
                 await Task.Run(() =>
@@ -217,29 +217,19 @@ namespace sync_donations_bm
                     using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                     {
                         IWorkbook workbook = new XSSFWorkbook(fileStream);
-                        ISheet sheet = workbook.GetSheet("節目贊助");
-                        if (sheet == null)
-                        {
-                            Logger.Error("Sheet '節目贊助' not found.");
-                            Dispatcher.Invoke(() => MessageBox.Show("Sheet '節目贊助' not found."));
-                            return;
-                        }
+                        ISheet sheet = workbook.GetSheetAt(0); // Assuming the first sheet is the overview sheet
 
-                        IRow row = sheet.GetRow(2); // F3 is the third row (index 2)
-                        if (row == null)
-                        {
-                            Logger.Error("Row 3 not found.");
-                            Dispatcher.Invoke(() => MessageBox.Show("Row 3 not found."));
-                            return;
-                        }
+                        // Collect existing event names
+                        IRow headerRow = sheet.GetRow(0); // Assuming the first row contains event names
+                        var existingEventNames = CollectExistingEventNames(headerRow);
 
-                        var existingEventNames = CollectExistingEventNames(row);
-
+                        // Process each event file
                         foreach (var eventItem in Events)
                         {
-                            ProcessEventFile(sheet, row, existingEventNames, eventItem);
+                            ProcessEventFile(sheet, headerRow, existingEventNames, eventItem);
                         }
 
+                        // Save the updated overview file
                         using (var outputStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
                         {
                             workbook.Write(outputStream);
@@ -261,6 +251,26 @@ namespace sync_donations_bm
                 Mouse.OverrideCursor = null; // Reset the cursor to the default
             }
         }
+
+        #endregion
+
+        #region Methods
+
+        private void SaveEventsToJson()
+        {
+            var data = new OverviewData
+            {
+                Overview = Overview,
+                Events = new List<Event>(Events)
+            };
+            var json = JsonSerializer.Serialize(data);
+            File.WriteAllText(JsonFilePath, json);
+            File.WriteAllText(ProjectJsonFilePath, json); // Update the project directory as well
+        }
+
+        #endregion
+
+        #region old code
 
         private Dictionary<string, int> CollectExistingEventNames(IRow row)
         {
@@ -504,7 +514,11 @@ namespace sync_donations_bm
                 targetCell.CellStyle = sourceCell.CellStyle;
             }
         }
+
+        #endregion
     }
+
+    #region Models
 
     public class Event
     {
@@ -521,4 +535,6 @@ namespace sync_donations_bm
         public Overview Overview { get; set; }
         public List<Event> Events { get; set; }
     }
+
+    #endregion
 }
